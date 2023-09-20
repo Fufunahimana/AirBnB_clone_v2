@@ -1,62 +1,144 @@
 #!/usr/bin/python3
-"""tests for the console"""
+''' Test suite for the console'''
+
+
+import sys
+import models
 import unittest
 from io import StringIO
-from unittest.mock import patch
-import pep8
-import os
-import console
-import tests
 from console import HBNBCommand
+from unittest.mock import create_autospec
 
 
-class TestConsole(unittest.TestCase):
-    """tests for the console, quit and empty"""
-
-    @classmethod
-    def setUpClass(cls):
-        """setup console class for test"""
-        cls.consol = HBNBCommand()
-
-    @classmethod
-    def teardown(cls):
-        """tears down"""
-        del cls.consol
+class test_console(unittest.TestCase):
+    ''' Test the console module'''
+    def setUp(self):
+        '''setup for'''
+        self.backup = sys.stdout
+        self.capt_out = StringIO()
+        sys.stdout = self.capt_out
 
     def tearDown(self):
-        """delete file"""
-        try:
-            os.remove("file.json")
-        except Exception:
-            pass
+        ''''''
+        sys.stdout = self.backup
 
-    def test_pep8_console(self):
-        """Pep8 test"""
-        style = pep8.StyleGuide(quiet=True)
-        p = style.check_files(["console.py"])
-        self.assertEqual(p.total_errors, 0, 'fix Pep8')
-
-    def test_docstrings_in_console(self):
-        """check for doc strings"""
-        self.assertIsNotNone(console.__doc__)
-        self.assertIsNotNone(HBNBCommand.emptyline.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_quit.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_EOF.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_create.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_show.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_destroy.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_all.__doc__)
-        self.assertIsNotNone(HBNBCommand.do_update.__doc__)
-        self.assertIsNotNone(HBNBCommand.default.__doc__)
-
-    def test_emptyline(self):
-        """test for empty line"""
-        with patch('sys.stdout', new=StringIO()) as f:
-            self.consol.onecmd("test")
-            self.assertEqual("*** Unknown syntax: test\n", f.getvalue())
+    def create(self):
+        ''' create an instance of the HBNBCommand class'''
+        return HBNBCommand()
 
     def test_quit(self):
-        """test the quit command works"""
-        with patch('sys.stdout', new=StringIO()) as f:
-            self.consol.onecmd("quit")
-            self.assertEqual('', f.getvalue())
+        ''' Test quit exists'''
+        console = self.create()
+        self.assertTrue(console.onecmd("quit"))
+
+    def test_EOF(self):
+        ''' Test EOF exists'''
+        console = self.create()
+        self.assertTrue(console.onecmd("EOF"))
+
+    def test_all(self):
+        ''' Test all exists'''
+        console = self.create()
+        console.onecmd("all")
+        self.assertTrue(isinstance(self.capt_out.getvalue(), str))
+
+    def test_show(self):
+        '''
+            Testing that show exists
+        '''
+        console = self.create()
+        console.onecmd("create User")
+        user_id = self.capt_out.getvalue()
+        sys.stdout = self.backup
+        self.capt_out.close()
+        self.capt_out = StringIO()
+        sys.stdout = self.capt_out
+        console.onecmd("show User " + user_id)
+        x = (self.capt_out.getvalue())
+        sys.stdout = self.backup
+        self.assertTrue(str is type(x))
+
+    def test_show_class_name(self):
+        '''
+            Testing the error messages for class name missing.
+        '''
+        console = self.create()
+        console.onecmd("create User")
+        user_id = self.capt_out.getvalue()
+        sys.stdout = self.backup
+        self.capt_out.close()
+        self.capt_out = StringIO()
+        sys.stdout = self.capt_out
+        console.onecmd("show")
+        x = (self.capt_out.getvalue())
+        sys.stdout = self.backup
+        self.assertEqual("** class name missing **\n", x)
+
+    def test_show_class_name(self):
+        '''
+            Test show message error for id missing
+        '''
+        console = self.create()
+        console.onecmd("create User")
+        user_id = self.capt_out.getvalue()
+        sys.stdout = self.backup
+        self.capt_out.close()
+        self.capt_out = StringIO()
+        sys.stdout = self.capt_out
+        console.onecmd("show User")
+        x = (self.capt_out.getvalue())
+        sys.stdout = self.backup
+        self.assertEqual("** instance id missing **\n", x)
+
+    def test_show_no_instance_found(self):
+        '''
+            Test show message error for id missing
+        '''
+        console = self.create()
+        console.onecmd("create User")
+        user_id = self.capt_out.getvalue()
+        sys.stdout = self.backup
+        self.capt_out.close()
+        self.capt_out = StringIO()
+        sys.stdout = self.capt_out
+        console.onecmd("show User " + "124356876")
+        x = (self.capt_out.getvalue())
+        sys.stdout = self.backup
+        self.assertEqual("** no instance found **\n", x)
+
+    def test_create(self):
+        '''
+            Test that create works
+        '''
+        console = self.create()
+        console.onecmd("create User")
+        self.assertTrue(isinstance(self.capt_out.getvalue(), str))
+
+    def test_class_name(self):
+        '''
+            Testing the error messages for class name missing.
+        '''
+        console = self.create()
+        console.onecmd("create")
+        x = (self.capt_out.getvalue())
+        self.assertEqual("** class name missing **\n", x)
+
+    def test_class_name_doest_exist(self):
+        '''
+            Testing the error messages for class name missing.
+        '''
+        console = self.create()
+        console.onecmd("create Binita")
+        x = (self.capt_out.getvalue())
+        self.assertEqual("** class doesn't exist **\n", x)
+
+    '''
+    def test_destroy(self):
+        console = self.create()
+        self.assertTrue(console.onecmd("destroy"))
+
+    def test_update(self):
+        console = self.create()
+        self.assertTrue(console.onecmd("update"))
+
+    '''
